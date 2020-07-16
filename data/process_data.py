@@ -1,142 +1,83 @@
-import json
-import plotly
+import sys
 import pandas as pd
-
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
-
-from flask import Flask
-from flask import render_template, request, jsonify
-from plotly.graph_objs import Bar, Scatter, Pie
-from sklearn.externals import joblib
+import numpy as np
 from sqlalchemy import create_engine
 
 
-app = Flask(__name__)
-
-def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
-    return clean_tokens
-
-# load data
-engine = create_engine('sqlite:///../data/DisasterResponse.db')
-df = pd.read_sql_table('Messages', engine)
-
-# load model
-model = joblib.load("../models/classifier.pkl")
-
-
-# index webpage displays cool visuals and receives user input text for model
-@app.route('/')
-@app.route('/index')
-def index():
+def load_data(messages_filepath, categories_filepath):
+    #Load Messages Dataset
+    messages = pd.read_csv(messages_filepath)
     
-    # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
-    genre_counts = df.groupby('genre').count()['message']
-    genre_names = list(genre_counts.index)
-    categories_count = df.iloc[:,4:].sum()
-    category_names = list(categories_count.index)
-
+    #Load Categories Dataset
+    categories = pd.read_csv(categories_filepath)
     
-    # create visuals
-    # TODO: Below is an example - modify to create your own visuals
-    graphs = [
-        {
-            'data': [
-                Scatter(
-                    x=category_names,
-                    y=categories_count
-                )
-            ],
+    #Merge datasets
+    df = pd.merge(messages,categories,on='id')
+    
+    return df
 
-            'layout': {
-                'title': 'Message Count by Category',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Genre"
-                }
-            }
-        },
-        {
-            'data': [
-                Bar(
-                    x=category_names,
-                    y=categories_count
-                )
-            ],
-
-            'layout': {
-                'title': 'Message Count by Category',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Genre"
-                }
-            }
-        },
-        {
-            'data': [
-                Bar(
-                    x=genre_names,
-                    y=genre_counts
-                )
-                
-            ],
-
-            'layout': {
-                'title': 'Genre Count by Category',
-                'yaxis': {
-                    'title': "Count"
-                },
-                'xaxis': {
-                    'title': "Genre"
-                }
-            }
-        }
+def clean_data(df):
+    #create a df for each indiviual category 
+    categories = df['categories'].str.split(';', expand = True)
+    #select first row
+    row = categories.iloc[0]
+    #get list of categories from that row , apply lambda function untill second to last character
+    category_colnames = row.transform(lambda x: x[:-2]).tolist()
+    #rename cols to categories
+    categories.columns = category_colnames
+    # Convert  category numbers
+    for column in categories:
+        # set every value to be the last character of a string
+        categories[column] = categories[column].transform(lambda x: x[-1:])
         
-
-
-    ]
+        # convert column from string to numeric
+        categories[column] = pd.to_numeric(categories[column])
     
-    # encode plotly graphs in JSON
-    ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
-    graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
+    # Drop the  categories  from `df`
+    df.drop('categories', axis = 1, inplace = True)
     
-    # render web page with plotly graphs
-    return render_template('master.html', ids=ids, graphJSON=graphJSON)
+    # Concatenate   dataframe with the new `categories` 
+    df = pd.concat([df, categories], axis = 1)
+    # Drop duplicates
+    df.drop_duplicates(inplace = True)
+    # Remove rows with a  value of 2 from df
+    df = df[df['related'] != 2]
+    
+    return df
 
 
-# web page that handles user query and displays model results
-@app.route('/go')
-def go():
-    # save user input in query
-    query = request.args.get('query', '') 
 
-    # use model to predict classification for query
-    classification_labels = model.predict([query])[0]
-    classification_results = dict(zip(df.columns[4:], classification_labels))
-
-    # This will render the go.html Please see that file. 
-    return render_template(
-        'go.html',
-        query=query,
-        classification_result=classification_results
-    )
+def save_data(df, database_filename):
+    
+    engine = create_engine('sqlite:///' + database_filename)
+    df.to_sql('DisasterResponse', engine, index=False, if_exists='replace')
+   
 
 
 def main():
-    app.run(host='0.0.0.0', port=3001)
+    if len(sys.argv) == 4:
+
+        messages_filepath, categories_filepath, database_filepath = sys.argv[1:]
+
+        print('Loading data...\n    MESSAGES: {}\n    CATEGORIES: {}'
+              .format(messages_filepath, categories_filepath))
+        df = load_data(messages_filepath, categories_filepath)
+
+        print('Cleaning data...')
+        df = clean_data(df)
+        
+        print('Saving data...\n    DATABASE: {}'.format(database_filepath))
+        save_data(df, database_filepath)
+        
+        print('Cleaned data saved to database!')
+    
+    else:
+        print('Please provide the filepaths of the messages & categories '\
+              'datasets as the first & second argument respectively, as '\
+              'well as the filepath of the database to save the cleaned data '\
+              'to as the third argument. \n\nExample: python process_data.py '\
+              'disaster_messages.csv disaster_categories.csv '\
+              'DisasterResponse.db')
 
 
 if __name__ == '__main__':
