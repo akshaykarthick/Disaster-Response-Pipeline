@@ -40,7 +40,7 @@ The app built to have an ML model to categorize every message received
 ***Screenshot 2***
 ![Screenshot 2](https://github.com/akshaykarthick/Disaster-Response-Pipeline/blob/master/screenshot2.png)
 
-***Screenshot 4***
+***Screenshot 3***
 ![Screenshot 2](https://github.com/akshaykarthick/Disaster-Response-Pipeline/blob/master/screenshot3.png)
 
 
