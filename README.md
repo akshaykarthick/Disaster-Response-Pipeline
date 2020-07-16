@@ -34,12 +34,16 @@ The app built to have an ML model to categorize every message received
 
 ## Screenshots
 
-***Screenshot 1: App analysis of the data base***
-![Screenshot 1](https://github.com/atwahsz/Disaster-Response-Pipeline/blob/master/readme-pics/Capture2.JPG)
+***Screenshot 1***
+![Screenshot 1](https://github.com/akshaykarthick/Disaster-Response-Pipeline/blob/master/screenshot1.png)
 
-***Screenshot 2: App word search Page***
-![Screenshot 2](https://github.com/atwahsz/Disaster-Response-Pipeline/blob/master/readme-pics/Capture.JPG)
+***Screenshot 2***
+![Screenshot 2](https://github.com/akshaykarthick/Disaster-Response-Pipeline/blob/master/screenshot2.png)
+
+***Screenshot 4***
+![Screenshot 2](https://github.com/akshaykarthick/Disaster-Response-Pipeline/blob/master/screenshot3.png)
+
 
 
 ## Licensing, Authors, Acknowledgements
-This app was completed as part of the [Udacity Data Scientist Nanodegree](https://www.udacity.com/course/data-scientist-nanodegree--nd025).
+This app was completed as part of the [Udacity Data Scientist Nanodegree](https://classroom.udacity.com/nanodegrees/nd025-ent/dashboard/overview).
